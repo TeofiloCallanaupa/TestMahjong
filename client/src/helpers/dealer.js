@@ -152,7 +152,7 @@ export default class Dealer {
       //new dealcards func
       for (let i = 0; i < 13; i++) {
         let playerCard = new Card(scene);
-        playerCard.render(400 + i * 50, 650, playerSprite[i]);
+        playerCard.render(400 + i * 50, 1125, playerSprite[i]);
         // allTiles.splice(i,1)
         // i--;
         let opponentCard = new Card(scene);

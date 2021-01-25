@@ -1,5 +1,6 @@
 import Card from "../helpers/card";
 import Zone from "../helpers/zone";
+import MyZone from "../helpers/myZone"
 import Dealer from "../helpers/dealer";
 import Draw from "../helpers/draw";
 import io from "socket.io-client";
@@ -93,6 +94,9 @@ export default class Game extends Phaser.Scene {
     this.zone = new Zone(this);
     this.dropZone = this.zone.renderZone();
     this.outline = this.zone.renderOutline(this.dropZone);
+    this.myZone = new MyZone(this);
+    this.myDropZone = this.myZone.renderMyZone();
+    this.outline = this.myZone.renderOutline(this.myDropZone);
     this.dealer = new Dealer(this);
     this.draw = new Draw(this);
     let me = 1;
@@ -166,11 +170,11 @@ export default class Game extends Phaser.Scene {
         let card = new Card(self);
         card
           .render(
-            self.dropZone.x - 350 + self.dropZone.data.values.cards * 50,
-            self.dropZone.y,
+            self.dropZone.x - 360 + ((self.dropZone.data.values.cards%15) * 50),
+            self.dropZone.y - 200 + ((~~(self.dropZone.data.values.cards/15)) * 60),
             sprite
           )
-          .disableInteractive();
+        //   .disableInteractive();
       }
     });
     //now moved to dealer.js
@@ -243,10 +247,11 @@ export default class Game extends Phaser.Scene {
     //stop doing stuff when dragging finished
     this.input.on("dragend", function (pointer, gameObject, dropped) {
       gameObject.setTint();
-      if (!dropped) {
-        gameObject.x = gameObject.input.dragStartX;
-        gameObject.y = gameObject.input.dragStartY;
-      }
+      // this is if i want it to go back to its original spot if i dont drop the tile in a drop zone
+    //   if (!dropped) {
+    //     gameObject.x = gameObject.input.dragStartX;
+    //     gameObject.y = gameObject.input.dragStartY;
+    //   }
     });
 
     //drags the gameObject(card) since its setInteractive()
@@ -257,9 +262,9 @@ export default class Game extends Phaser.Scene {
 
     this.input.on("drop", function (pointer, gameObject, dropZone) {
       dropZone.data.values.cards++;
-      gameObject.x = dropZone.x - 350 + dropZone.data.values.cards * 50;
-      gameObject.y = dropZone.y;
-      gameObject.disableInteractive();
+      gameObject.x = dropZone.x - 360 + ((dropZone.data.values.cards%15) * 50);
+      gameObject.y = dropZone.y - 200 + ((~~(dropZone.data.values.cards/15)) * 60);
+    //   gameObject.disableInteractive();
       self.socket.emit("cardPlayed", gameObject, self.isPlayerA);
     });
     //attempt at trying to make the cards bigger when pointerover
