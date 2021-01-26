@@ -160,6 +160,7 @@ export default class Game extends Phaser.Scene {
 
     this.socket.on("drawCard", function (isPlayerA) {
         if (isPlayerA !== self.isPlayerA) {
+            self.draw.curr++
         self.draw.drewCard();
         }
     });
