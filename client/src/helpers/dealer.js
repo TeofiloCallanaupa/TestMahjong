@@ -106,26 +106,26 @@ export default class Dealer {
       for (let i = 0; i < 2; i++) {
         tiles = tiles.concat(tiles).flat();
       }
-      let allTiles = tiles.concat(flowers).flat();
-      Phaser.Utils.Array.Shuffle(allTiles);
+      this.allTiles = tiles.concat(flowers).flat();
+      Phaser.Utils.Array.Shuffle(this.allTiles);
       
-      console.log(allTiles);
+      console.log(this.allTiles);
       //layout all the hands first
       for (let j = 0; j < 52; j++) {
         if (j < 13) {
-            const tempA = allTiles.shift();
+            const tempA = this.allTiles.shift();
             playerASprite.push(tempA);
         }
         else if (j >= 13 && j < 26) {
-            const tempB = allTiles.shift();
+            const tempB = this.allTiles.shift();
             playerBSprite.push(tempB);
         }
         else if (j >=26 && j < 39) {
-            const tempC = allTiles.shift();
+            const tempC = this.allTiles.shift();
             playerCSprite.push(tempC);
         }
         else if (j >=39 && j < 52) {
-            const tempD = allTiles.shift();
+            const tempD = this.allTiles.shift();
             playerDSprite.push(tempD);
         }
       }
@@ -138,14 +138,14 @@ export default class Dealer {
       if (scene.isPlayerA) {
         playerSprite = [...playerASprite];
         console.log('meA',playerSprite);
-        // allTiles.splice(0, 13);
+        // this.allTiles.splice(0, 13);
         opponentSprite = "tileBack";
       }
       // if(scene.isPlayerB) {
       else {
         playerSprite = [...playerBSprite];
         console.log(playerSprite);
-        // allTiles.splice(0, 13);
+        // this.allTiles.splice(0, 13);
         opponentSprite = "tileBack";
       }
 
@@ -153,7 +153,7 @@ export default class Dealer {
       for (let i = 0; i < 13; i++) {
         let playerCard = new Card(scene);
         playerCard.render(400 + i * 50, 1125, playerSprite[i]);
-        // allTiles.splice(i,1)
+        // this.allTiles.splice(i,1)
         // i--;
         let opponentCard = new Card(scene);
         scene.opponentCards.push(
@@ -162,7 +162,7 @@ export default class Dealer {
             .disableInteractive()
         );
       }
-      console.log("after", allTiles);
+      console.log("after", this.allTiles);
     };
   }
 }

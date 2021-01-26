@@ -99,6 +99,7 @@ export default class Game extends Phaser.Scene {
     this.outline = this.myZone.renderOutline(this.myDropZone);
     this.dealer = new Dealer(this);
     this.draw = new Draw(this);
+    this.currTiles = Phaser.Utils.Array.Shuffle(this.dealer.allTiles);
     let me = 1;
 
     //change this when you're using a live server

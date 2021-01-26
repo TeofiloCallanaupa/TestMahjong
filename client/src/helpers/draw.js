@@ -6,7 +6,7 @@ export default class Draw {
         this.curr = -1;
         this.drawCard = () => {
             let cardDrew = 'whiteDragon';
-            let hand = [ "sticks2",
+            this.hand = [ "sticks2",
             "sticks3",
             "maahn5",
             "balls4",
@@ -23,8 +23,8 @@ export default class Draw {
             "balls2",]
             let newPlayerCard = new Card(scene)
             this.curr++;
-            newPlayerCard.render(1100, 1125, hand[this.curr])
-            hand.splice(0,1)
+            newPlayerCard.render(1100, 1125, this.hand[this.curr])
+            this.hand = this.hand.splice(0,1)
             
         }
         this.drewCard = () => {
