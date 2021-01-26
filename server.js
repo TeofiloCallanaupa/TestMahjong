@@ -57,12 +57,16 @@ io.on('connection', function (socket) {
         io.emit('dealCards',test);
     });
 
-    socket.on('drawCard', function(){
-        io.emit('drawCard')
+    socket.on('drawCard', function(isPlayerA){
+        io.emit('drawCard', isPlayerA)
     })
 
     socket.on('cardPlayed', function(gameObject, isPlayerA) {
         io.emit('cardPlayed', gameObject, isPlayerA);
+    });
+
+    socket.on('cardBenched', function(gameObject, isPlayerA) {
+        io.emit('cardBenched', gameObject, isPlayerA);
     });
 
     //who dc and remove player

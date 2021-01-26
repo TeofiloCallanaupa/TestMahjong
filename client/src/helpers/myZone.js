@@ -4,7 +4,7 @@ export default class MyZone {
             let myDropZone = scene.add.zone(700, 920, 800, 100)
             .setRectangleDropZone(800, 100);
 
-            myDropZone.setData({ cards:0 });
+            myDropZone.setData({ cards: -1 });
             return myDropZone;
         };
         this.renderOutline = (myDropZone) => {

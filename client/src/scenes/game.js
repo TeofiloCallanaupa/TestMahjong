@@ -101,6 +101,7 @@ export default class Game extends Phaser.Scene {
     this.draw = new Draw(this);
     let me = 1;
 
+    //change this when you're using a live server
     this.socket = io("http://localhost:1337");
 
     this.socket.on("connect", function () {
@@ -157,26 +158,44 @@ export default class Game extends Phaser.Scene {
     //  if (isPlayerA)
     // }
 
-    this.socket.on("drawCard", function () {
-      self.draw.drawCard();
+    this.socket.on("drawCard", function (isPlayerA) {
+        if (isPlayerA !== self.isPlayerA) {
+        self.draw.drewCard();
+        }
     });
 
     //sends info that card is played to other players
     this.socket.on("cardPlayed", function (gameObject, isPlayerA) {
       if (isPlayerA !== self.isPlayerA) {
+          console.log('generaaaaaaal',isPlayerA)
+          console.log('meeeeeeeee',self.isPlayerA)
         let sprite = gameObject.textureKey;
-        self.opponentCards.shift().destroy();
+        self.opponentCards.pop().destroy();
         self.dropZone.data.values.cards++;
         let card = new Card(self);
         card
-          .render(
+        .render(
             self.dropZone.x - 360 + ((self.dropZone.data.values.cards%15) * 50),
             self.dropZone.y - 200 + ((~~(self.dropZone.data.values.cards/15)) * 60),
             sprite
-          )
-        //   .disableInteractive();
-      }
+            )
+        }
     });
+    
+    this.socket.on("cardBenched", function(gameObject, isPlayerA) {
+        if (isPlayerA !== self.isPlayerA) {
+            let pic = gameObject.textureKey;
+            self.opponentCards.pop().destroy();
+            self.myDropZone.data.values.cards++;
+            let card = new Card(self);
+            card.render(
+                self.myDropZone.x-360 + self.myDropZone.data.values.cards * 50, 
+                self.myDropZone.y-660, 
+                pic
+                )
+                  .disableInteractive();
+        }
+    })
     //now moved to dealer.js
     // //our dealCards function
     // //uses the Card class to make a bunch of new cards
@@ -217,7 +236,8 @@ export default class Game extends Phaser.Scene {
 
     //when you click, you draw a card
     this.drawText.on("pointerdown", function () {
-      self.socket.emit("drawCard");
+      self.draw.drawCard();
+        self.socket.emit("drawCard", self.isPlayerA);
     });
 
     //change color when mouse goes over
@@ -259,18 +279,32 @@ export default class Game extends Phaser.Scene {
       gameObject.x = dragX;
       gameObject.y = dragY;
     });
-
+    //this variable renders once in each player's browser
+    let benchVar = -1
     this.input.on("drop", function (pointer, gameObject, dropZone) {
-      dropZone.data.values.cards++;
-      gameObject.x = dropZone.x - 360 + ((dropZone.data.values.cards%15) * 50);
-      gameObject.y = dropZone.y - 200 + ((~~(dropZone.data.values.cards/15)) * 60);
-    //   gameObject.disableInteractive();
-      self.socket.emit("cardPlayed", gameObject, self.isPlayerA);
+        if(dropZone===self.dropZone){
+            dropZone.data.values.cards++;
+
+          gameObject.x = dropZone.x - 360 + ((dropZone.data.values.cards%15) * 50);
+          gameObject.y = dropZone.y - 200 + ((~~(dropZone.data.values.cards/15)) * 60);
+          //   gameObject.disableInteractive();
+          self.socket.emit("cardPlayed", gameObject, self.isPlayerA);
+        }else if(dropZone===self.myDropZone){
+            // this variable gets carried over to every player
+            // dropZone.data.values.cards++;
+            benchVar++
+            gameObject.x = dropZone.x -360 + benchVar * 50;
+            gameObject.y = dropZone.y;
+            gameObject.disableInteractive();
+            self.socket.emit("cardBenched", gameObject, self.isPlayerA);
+        }
     });
     //attempt at trying to make the cards bigger when pointerover
     // this.input.on('pointerover', function(pointer, gameObject) {
     //     gameObject.setScale(1.3,1.3);
     // })
+    //
+    //self.socket.emit("deal", deck, self.isPlayerA)
   }
 
   update() {
