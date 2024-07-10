@@ -1,4 +1,6 @@
 export default class MyZone {
+    // sets a zone for a player to reveal their tiles
+    // the tiles will be revealed to everyone here and will lock in place
     constructor(scene){
         this.renderMyZone = () => {
             let myDropZone = scene.add.zone(700, 920, 800, 100)
