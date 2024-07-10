@@ -1,4 +1,6 @@
 export default class Zone {
+    // sets a zone for the discarded tiles
+    // the tiles will be revealed to everyone here and will lock in place
     constructor(scene) {
         this.renderZone = () => {
             let dropZone = scene.add.zone(700, 600, 800, 500)
