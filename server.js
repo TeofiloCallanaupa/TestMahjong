@@ -1,83 +1,139 @@
-const server = require('express');
-const app = server()
-const http = require('http').createServer(app);
+const express = require("express");
+const app = express();
+const http = require("http").createServer(app);
 //screw cors
-const io = require('socket.io')(http, {
-    cors: {
-        origin: "http://localhost:8080",
-        methods: ["GET", "POST"]
-    }
+const io = require("socket.io")(http, {
+  cors: {
+    origin: "http://localhost:8080",
+    methods: ["GET", "POST"],
+  },
 });
-// const dealer = require('./client/src/helpers/dealer')
-let players = []
 
-io.on('connection', function (socket) {
-    console.log('A user connected: ' + socket.id);
-    
-    players.push(socket.id);
-    console.log('Current players: ' + players)
+let players = [];
 
-    if(players.length === 1) {
-        console.log('PlayerA: ' + socket.id)
-        io.emit('isPlayerA');
-    };
-    if(players.length === 2) {
-        console.log('PlayerB: ' + socket.id)
-        io.emit('isPlayerB');
-    };
-    if(players.length === 3) {
-        console.log('PlayerC: ' + socket.id)
-        io.emit('isPlayerC');
-    };
-    if(players.length === 4) {
-        console.log('PlayerD: ' + socket.id)
-        io.emit('isPlayerD');
-    };
+//Create a Deck
+function createDeck() {
+  let deck = [];
+  const suits = ["balls", "sticks", "maahn"];
+  const winds = ["east", "south", "west", "north"];
+  const dragons = ["red", "green", "white"];
+  const flowers = ["a", "b", "c", "d"];
+  const numbers = Array.from({ length: 9 }, (_, i) => i + 1);
 
-    socket.on("join_room", room => {
-        socket.join(room);
+  // suits
+  suits.forEach((suit) => {
+    numbers.forEach((number) => {
+      for (let i = 0; i < 4; i++) {
+        deck.push({ suit, number });
+      }
     });
+  });
 
-    socket.on("decking", data => {
-        const {room, deck} = data
-        socket.to(room).emit("decking",{
-            deck,
-            name: "Player1"
-        })
-    })
+  // winds
+  winds.forEach((wind) => {
+    for (let i = 0; i < 4; i++) {
+      deck.push({ type: "wind", wind });
+    }
+  });
 
-    socket.on("pickingUp",({room})=> {
-        socket.to(room).emit("pickingUp")
-    })
+  // dragons
+  dragons.forEach((dragon) => {
+    for (let i = 0; i < 4; i++) {
+      deck.push({ type: "dragon", dragon });
+    }
+  });
 
+  // flowers
+  flowers.forEach((flower) => {
+    for (let i = 0; i < 2; i++) {
+      deck.push({ type: "flower", flower });
+    }
+  });
 
-    //when you recieve dealCards, send it to everyone
-    socket.on('dealCards', function(test) {
-        // test = ['dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonGreen', 'dragonGreen', 'dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen']
-        io.emit('dealCards',test);
+  return deck;
+}
+
+// Shuffle a deck
+function shuffleDeck(deck) {
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+}
+
+// Deal Tiles
+function dealTiles(deck, numPlayers) {
+  let playerHands = {};
+  const handSize = 13;
+
+  for (let i = 0; i < numPlayers; i++) {
+    playerHands[i] = deck.splice(0, handSize);
+  }
+  return playerHands;
+}
+
+// Initialize deck and shuffle
+let deck = createDeck();
+shuffleDeck(deck);
+let playerHands = dealTiles(deck, 4);
+
+// Draw a card
+function drawCard(deck) {
+  return deck.pop();
+}
+
+io.on("connection", function (socket) {
+  console.log("A user connected: " + socket.id);
+  players.push(socket.id);
+  console.log("Current players: " + players);
+
+  const playerIndex = players.length - 1;
+  socket.emit("gameState", { playerHand: playerHands[playerIndex] });
+
+  socket.emit(`isPlayer${String.fromCharCode(65 + playerIndex)}`);
+
+  socket.on("join_room", (room) => {
+    socket.join(room);
+  });
+
+  socket.on("decking", (data) => {
+    const { room, deck } = data;
+    socket.to(room).emit("decking", {
+      deck,
+      name: `Player${playerIndex + 1}`,
     });
+  });
 
-    socket.on('drawCard', function(isPlayerA){
-        io.emit('drawCard', isPlayerA)
-    })
+  socket.on("pickingUp", ({ room }) => {
+    socket.to(room).emit("pickingUp");
+  });
 
-    socket.on('cardPlayed', function(gameObject, isPlayerA) {
-        io.emit('cardPlayed', gameObject, isPlayerA);
-    });
+  //when you recieve dealCards, send it to everyone
+  socket.on("dealCards", function (playerId) {
+    socket.emit("dealCards", { playerId, cards: playerHands[playerId] });
+  });
 
-    socket.on('cardBenched', function(gameObject, isPlayerA) {
-        io.emit('cardBenched', gameObject, isPlayerA);
-    });
+  socket.on("drawCard", function (playerId) {
+    const card = drawCard(deck)
+    socket.emit("cardDrawn", { playerId, card});
+  });
 
-    //who dc and remove player
-    socket.on('disconnect', function () {
-        console.log('A user disconnected: ' + socket.id);
-        players = players.filter(player => player !== socket.id)
-        console.log('Current players: ' + players)
-    });
-})
+  socket.on("cardPlayed", function (gameObject, playerId) {
+    io.emit("cardPlayed", gameObject, playerId);
+  });
 
+  socket.on("cardBenched", function (gameObject, playerId) {
+    io.emit("cardBenched", gameObject, playerId);
+  });
+
+  //who dc and remove player
+  socket.on("disconnect", function () {
+    console.log("A user disconnected: " + socket.id);
+    players = players.filter((player) => player !== socket.id);
+    console.log("Current players: " + players);
+  });
+});
 
 http.listen(1337, function () {
-    console.log('Server started!');
-})
+  console.log("Server started!");
+});
