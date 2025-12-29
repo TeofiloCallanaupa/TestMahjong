@@ -1,6 +1,6 @@
 import Card from "../helpers/card";
 import Zone from "../helpers/zone";
-import MyZone from "../helpers/myZone"
+import MyZone from "../helpers/myZone";
 import Dealer from "../helpers/dealer";
 import Draw from "../helpers/draw";
 import io from "socket.io-client";
@@ -73,12 +73,9 @@ export default class Game extends Phaser.Scene {
     //attempt at making more individual players
     let self = this;
     // self.stage.backgroundColor = "#4488AA"
-    this.playerCount = 0;
-    this.isPlayerA = false;
-    this.isPlayerB = false;
-    this.isPlayerC = false;
-    this.isPlayerD = false;
-    this.opponentCards = [];
+    // this.playerCount = 0;
+    this.players = {};
+    // this.opponentCards = [];
 
     //this is how we test just one card
     //##########
@@ -99,132 +96,94 @@ export default class Game extends Phaser.Scene {
     this.outline = this.myZone.renderOutline(this.myDropZone);
     this.dealer = new Dealer(this);
     this.draw = new Draw(this);
-    this.currTiles = Phaser.Utils.Array.Shuffle(this.dealer.allTiles);
-    let me = 1;
 
     //change this when you're using a live server
     this.socket = io("http://localhost:1337");
 
     this.socket.on("connect", function () {
       console.log("Connected!");
-    });
 
-    this.socket.on("currentPlayers", function (players) {
-      for (let curr = 0; curr < players.length; curr++) {
-        if (players[curr] === self.socket.id) {
-          me += curr;
-        }
-      }
-    });
-
-    if (me === 1) {
-      this.socket.on("isPlayerA", function () {
-        // if(this.playerCount === 1){
-        self.isPlayerA = true;
-        console.log(me);
-        // this.playerCount++;
-        // }
-        // if(this.playerCount === 2){
-        //     self.isPlayerB = true;
-        //     self.isPlayerA = false;
-        //     this.playerCount++;
-        // }
+      this.socket.on("gameState", (data) => {
+        // self.players[self.socket.id] = data.playerHand;
+        self.dealer.dealCards(data.playerHand);
       });
-    }
-    if (me === 2) {
-      this.socket.on("isPlayerB", function () {
-        self.isPlayerB = true;
-        self.isPlayerA = false;
-        console.log(me);
-      });
-    }
-    // let test = ['dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonGreen', 'dragonGreen', 'dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen']
-    // if(self.isPlayerA) {
-        // test = ['dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed']
-    this.socket.on("dealCards", function () {
-        // test = test.splice(0,12)
-            self.dealer.dealCards();
-            self.dealText.disableInteractive();
-        });
-    // }
-    // else{ 
-    //     // test = ['dragonGreen', 'dragonGreen', 'dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen','dragonGreen']
-    //         this.socket.on("dealCards", function () {
-    //                 // test = ['dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed','dragonRed']
-    //                 self.dealer.dealCards(test);
-    //                 self.dealText.disableInteractive();
-    //             });
-    //         }
-    //dealCars (hand,isPlayerA){
-    //  if (isPlayerA)
-    // }
 
-    this.socket.on("drawCard", function (isPlayerA) {
-        if (isPlayerA !== self.isPlayerA) {
-            self.draw.curr++
-        self.draw.drewCard();
+      this.socket.on("isPlayer", (playerRole) => {
+        self.players[self.socket.id] = { role: playerRole };
+        console.log(`You are ${playerRole}`);
+      });
+
+      this.socket.on("dealCards", function (data) {
+        if (data.playerId === self.socket.id) {
+          self.dealer.dealCards(data.cards);
+          self.dealText.disableInteractive();
         }
+      });
+
+      this.socket.on("drawCard", function (data) {
+        if (data.playerId !== self.socket.id) {
+          self.draw.drewCard(data.card);
+        }
+      });
+
+      this.socket.on("cardPlayed", function (gameObject) {
+        if (gameObject.playerId !== self.socket.id) {
+          self.addCardToZone(gameObject.textureKey);
+        }
+      });
     });
 
     //sends info that card is played to other players
     this.socket.on("cardPlayed", function (gameObject, isPlayerA) {
       if (isPlayerA !== self.isPlayerA) {
-          console.log('generaaaaaaal',isPlayerA)
-          console.log('meeeeeeeee',self.isPlayerA)
+        console.log("generaaaaaaal", isPlayerA);
+        console.log("meeeeeeeee", self.isPlayerA);
         let sprite = gameObject.textureKey;
         self.opponentCards.pop().destroy();
         self.dropZone.data.values.cards++;
         let card = new Card(self);
-        card
-        .render(
-            self.dropZone.x - 360 + ((self.dropZone.data.values.cards%15) * 50),
-            self.dropZone.y - 200 + ((~~(self.dropZone.data.values.cards/15)) * 60),
-            sprite
-            )
-        }
+        card.render(
+          self.dropZone.x - 360 + (self.dropZone.data.values.cards % 15) * 50,
+          self.dropZone.y - 200 + ~~(self.dropZone.data.values.cards / 15) * 60,
+          sprite
+        );
+      }
     });
-    
-    this.socket.on("cardBenched", function(gameObject, isPlayerA) {
-        if (isPlayerA !== self.isPlayerA) {
-            let pic = gameObject.textureKey;
-            self.opponentCards.pop().destroy();
-            self.myDropZone.data.values.cards++;
-            let card = new Card(self);
-            card.render(
-                self.myDropZone.x-360 + self.myDropZone.data.values.cards * 50, 
-                self.myDropZone.y-660, 
-                pic
-                )
-                  .disableInteractive();
-        }
-    })
-    //now moved to dealer.js
-    // //our dealCards function
-    // //uses the Card class to make a bunch of new cards
-    // this.dealCards = () => {
-    //     for (let i = 0; i < 5; i++){
-    //         let playerCard = new Card(this);
-    //         playerCard.render(475 + (i*50), 650, 'greenDragon')
-    //     }
 
-    // }
+    this.socket.on("cardBenched", function (gameObject, isPlayerA) {
+      if (isPlayerA !== self.isPlayerA) {
+        let pic = gameObject.textureKey;
+        self.opponentCards.pop().destroy();
+        self.myDropZone.data.values.cards++;
+        let card = new Card(self);
+        card
+          .render(
+            self.myDropZone.x - 360 + self.myDropZone.data.values.cards * 50,
+            self.myDropZone.y - 660,
+            pic
+          )
+          .disableInteractive();
+      }
+    });
 
     //will become out button to deal starting card/tile
     this.dealText = this.add
       .text(0, 0, ["DEAL TILES"])
       .setFontSize(18)
       .setColor("#DED112")
-      .setInteractive();
+      .setInteractive()
+      .on("pointerdown", () => {
+        self.socket.emit("dealCards");
+      });
+
     this.drawText = this.add
       .text(0, 20, ["DRAW A TILE"])
       .setFontSize(18)
       .setColor("#DED112")
-      .setInteractive();
-
-    //when you click, you deal cards
-    this.dealText.on("pointerdown", function () {
-      self.socket.emit("dealCards");
-    });
+      .setInteractive()
+      .on("pointerdown", () => {
+        self.socket.emit("drawCards", { playerId: self.socket.id });
+      });
 
     //change color when mouse goes over
     this.dealText.on("pointerover", function () {
@@ -234,12 +193,6 @@ export default class Game extends Phaser.Scene {
     //change color back when the mouse leaves
     this.dealText.on("pointerout", function () {
       self.dealText.setColor("#DED112");
-    });
-
-    //when you click, you draw a card
-    this.drawText.on("pointerdown", function () {
-      self.draw.drawCard();
-        self.socket.emit("drawCard", self.isPlayerA);
     });
 
     //change color when mouse goes over
@@ -268,12 +221,12 @@ export default class Game extends Phaser.Scene {
     // })
     //stop doing stuff when dragging finished
     this.input.on("dragend", function (pointer, gameObject, dropped) {
-      gameObject.setTint();
+      gameObject.clearTint();
       // this is if i want it to go back to its original spot if i dont drop the tile in a drop zone
-    //   if (!dropped) {
-    //     gameObject.x = gameObject.input.dragStartX;
-    //     gameObject.y = gameObject.input.dragStartY;
-    //   }
+      //   if (!dropped) {
+      //     gameObject.x = gameObject.input.dragStartX;
+      //     gameObject.y = gameObject.input.dragStartY;
+      //   }
     });
 
     //drags the gameObject(card) since its setInteractive()
@@ -282,24 +235,30 @@ export default class Game extends Phaser.Scene {
       gameObject.y = dragY;
     });
     //this variable renders once in each player's browser
-    let benchVar = -1
+    let benchVar = -1;
     this.input.on("drop", function (pointer, gameObject, dropZone) {
-        if(dropZone===self.dropZone){
-            dropZone.data.values.cards++;
+      if (dropZone === self.dropZone) {
+        dropZone.data.values.cards++;
 
-          gameObject.x = dropZone.x - 360 + ((dropZone.data.values.cards%15) * 50);
-          gameObject.y = dropZone.y - 200 + ((~~(dropZone.data.values.cards/15)) * 60);
-          //   gameObject.disableInteractive();
-          self.socket.emit("cardPlayed", gameObject, self.isPlayerA);
-        }else if(dropZone===self.myDropZone){
-            // this variable gets carried over to every player
-            // dropZone.data.values.cards++;
-            benchVar++
-            gameObject.x = dropZone.x -360 + benchVar * 50;
-            gameObject.y = dropZone.y;
-            gameObject.disableInteractive();
-            self.socket.emit("cardBenched", gameObject, self.isPlayerA);
-        }
+        gameObject.x =
+          dropZone.x - 360 + (dropZone.data.values.cards % 15) * 50;
+        gameObject.y =
+          dropZone.y - 200 + ~~(dropZone.data.values.cards / 15) * 60;
+        //   gameObject.disableInteractive();
+        self.socket.emit("cardPlayed", {
+          textureKey: gameObject.texture.key,
+          playerId: self.socket.id,
+        });
+      }
+      // else if(dropZone===self.myDropZone){
+      //     // this variable gets carried over to every player
+      //     // dropZone.data.values.cards++;
+      //     benchVar++
+      //     gameObject.x = dropZone.x -360 + benchVar * 50;
+      //     gameObject.y = dropZone.y;
+      //     // gameObject.disableInteractive();
+      //     self.socket.emit("cardBenched", gameObject, self.isPlayerA);
+      // }
     });
     //attempt at trying to make the cards bigger when pointerover
     // this.input.on('pointerover', function(pointer, gameObject) {
@@ -307,6 +266,10 @@ export default class Game extends Phaser.Scene {
     // })
     //
     //self.socket.emit("deal", deck, self.isPlayerA)
+  }
+  addCardToZone(sprite) {
+    let card = new Card(this);
+    card.render(this.dropZone.x, this.dropZone.y, sprite);
   }
 
   update() {
