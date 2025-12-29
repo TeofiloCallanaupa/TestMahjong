@@ -1,5 +1,5 @@
 {
-  "name": "mahjong-engine",
+  "name": "mahjong-server",
   "version": "1.0.0",
   "description": "Custom Mahjong game engine and logic server.",
   "main": "server.js",

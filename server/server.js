@@ -18,6 +18,7 @@ function createDeck() {
   const winds = ["east", "south", "west", "north"];
   const dragons = ["red", "green", "white"];
   const flowers = ["a", "b", "c", "d"];
+  const seasons = ["1", "2", "3", "4"];
   const numbers = Array.from({ length: 9 }, (_, i) => i + 1);
 
   // suits
@@ -43,12 +44,12 @@ function createDeck() {
     }
   });
 
-  // flowers
-  flowers.forEach((flower) => {
-    for (let i = 0; i < 2; i++) {
-      deck.push({ type: "flower", flower });
-    }
-  });
+  // bonuses
+  flowers.forEach((flower) => deck.push({ type: "flower", flower }));
+  seasons.forEach((season) => deck.push({ type: "season", season }));
+
+  // unique id per physical tile
+  deck = deck.map((t, id) => ({ ...t, id }));
 
   return deck;
 }
