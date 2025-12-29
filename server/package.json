@@ -4,7 +4,9 @@
   "description": "Custom Mahjong game engine and logic server.",
   "main": "server.js",
   "scripts": {
-    "start": "nodemon server.js"
+    "start": "nodemon server.js",
+    "test:deck": "node tests/verify_deck.js",
+    "test:sim": "node tests/simulate_4_players.js"
   },
   "author": "Teofilo Callanaupa",
   "license": "MIT",

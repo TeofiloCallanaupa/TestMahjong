@@ -1,0 +1,14 @@
+{
+  "name": "mahjong-engine-root",
+  "version": "1.0.0",
+  "description": "Root directory for Mahjong Engine (Server) and Client.",
+  "scripts": {
+    "start": "echo 'Error: Run server and client separately. See README.' && exit 1",
+    "server": "cd server && npm start",
+    "client": "cd client && npm start",
+    "test:sim": "cd server && npm run test:sim",
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install"
+  },
+  "author": "Teofilo Callanaupa",
+  "license": "MIT"
+}
